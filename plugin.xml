@@ -230,6 +230,7 @@ xmlns:android="http://schemas.android.com/apk/res/android"
         </config-file>
 
         <source-file src="src/wp/File.cs" />
+        <source-file src="src/wp/FileSystemRoot.cs" />
 
         <!-- wp specific file apis -->
         <js-module src="www/wp/FileUploadOptions.js" name="FileUploadOptions1">
@@ -247,12 +248,19 @@ xmlns:android="http://schemas.android.com/apk/res/android"
         </config-file>
 
         <source-file src="src/wp/File.cs" />
+        <source-file src="src/wp/FileSystemRoot.cs" />
 
         <!-- wp specific file apis -->
         <js-module src="www/wp/FileUploadOptions.js" name="FileUploadOptions1">
             <merges target="window.FileUploadOptions" />
         </js-module>
-
+        <js-module src="www/fileSystems-roots.js" name="fileSystems-roots">
+            <runs/>
+        </js-module>
+        <js-module src="www/fileSystemPaths.js" name="fileSystemPaths">
+            <merges target="cordova" />
+            <runs/>
+        </js-module>
     </platform>
 
     <!-- blackberry10 -->

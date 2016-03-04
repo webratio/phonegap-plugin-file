@@ -17,7 +17,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.IsolatedStorage;
+using System.Linq;
 using System.Runtime.Serialization;
+using System.Runtime.Serialization.Json;
 using System.Security;
 using System.Text;
 using System.Windows;
@@ -47,13 +49,17 @@ namespace WPCordovaClassLib.Cordova.Commands
         // File system options
         public const int TEMPORARY = 0;
         public const int PERSISTENT = 1;
-        public const int RESOURCE = 2;
-        public const int APPLICATION = 3;
 
-        /// <summary>
-        /// Temporary directory name
-        /// </summary>
-        private readonly string TMP_DIRECTORY_NAME = "tmp";
+        // File system names
+        public const string TEMPORARY_NAME = "temporary";
+        public const string PERSISTENT_NAME = "persistent";
+        public const string APPDATA_LOCAL_NAME = "appdata-local";
+
+        // File system roots
+        private static readonly FileSystemRoot TEMPORARY_ROOT = new FileSystemRoot(TEMPORARY_NAME, "tmp", TEMPORARY);
+        private static readonly FileSystemRoot PERSISTENT_ROOT = new FileSystemRoot(PERSISTENT_NAME, "pers", PERSISTENT);
+        private static readonly FileSystemRoot APPDATA_LOCAL_ROOT = new FileSystemRoot(APPDATA_LOCAL_NAME);
+        private static readonly IList<FileSystemRoot> ROOTS = new List<FileSystemRoot> { TEMPORARY_ROOT, PERSISTENT_ROOT, APPDATA_LOCAL_ROOT }.AsReadOnly();
 
         /// <summary>
         /// Represents error code for callback
@@ -275,16 +281,22 @@ namespace WPCordovaClassLib.Cordova.Commands
         }
 
         /// <summary>
-        /// Represents file or directory modification metadata
+        /// Represents file or directory entry metadata
         /// </summary>
         [DataContract]
-        public class ModificationMetadata
+        public class EntryMetadata
         {
             /// <summary>
             /// Modification time
             /// </summary>
-            [DataMember]
-            public string modificationTime { get; set; }
+            [DataMember(Name = "modificationTime")]
+            public string ModificationTime { get; set; }
+
+            /// <summary>
+            /// Size of the file in bytes. Always 0 for directories.
+            /// </summary>
+            [DataMember(Name = "size")]
+            public long Size { get; set; }
         }
 
         /// <summary>
@@ -320,13 +332,24 @@ namespace WPCordovaClassLib.Cordova.Commands
 
             public bool IsResource { get; set; }
 
+            /// <summary>
+            /// Name of the file system into which the file/directory is rooted
+            /// </summary>
+            [DataMember(Name = "filesystemName")]
+            public string FileSystemName { get; set; }
+
+            /// <summary>
+            /// Integer constant corresponding to the file system (kept for compatibility)
+            /// </summary>
+            [DataMember(Name = "filesystem")]
+            public int FileSystemType { get; set; }
+
             public static FileEntry GetEntry(string filePath, bool bIsRes=false)
             {
                 FileEntry entry = null;
                 try
                 {
                     entry = new FileEntry(filePath, bIsRes);
-
                 }
                 catch (Exception ex)
                 {
@@ -340,6 +363,21 @@ namespace WPCordovaClassLib.Cordova.Commands
             /// </summary>
             /// <param name="filePath"></param>
             public FileEntry(string filePath, bool bIsRes = false)
+                : this(filePath, FindFileSystemRoot(filePath), bIsRes)
+            {
+            }
+
+            private static FileSystemRoot FindFileSystemRoot(string filePath)
+            {
+                var root = ROOTS.First(r => r.ContainsPath(filePath));
+                if (root == null)
+                {
+                    throw new ArgumentException("File path not part of any file system");
+                }
+                return root;
+            }
+
+            public FileEntry(string filePath, FileSystemRoot filesystemRoot, bool bIsRes = false)
             {
                 if (string.IsNullOrEmpty(filePath))
                 {
@@ -389,6 +427,9 @@ namespace WPCordovaClassLib.Cordova.Commands
                         this.FullPath = filePath;
                     }
                 }
+
+                this.FileSystemName = filesystemRoot.Name;
+                this.FileSystemType = filesystemRoot.Type;
             }
 
             /// <summary>
@@ -416,6 +457,18 @@ namespace WPCordovaClassLib.Cordova.Commands
             }
         }
 
+        /// <summary>
+        /// Map of root paths of supported file systems.
+        /// </summary>
+        [DataContract]
+        public class FileSystemPaths
+        {
+            /// <summary>
+            /// Root directory for the "data" file system.
+            /// </summary>
+            [DataMember(Name = "dataDirectory", IsRequired = true)]
+            public string DataDirectory { get; set; }
+        }
 
         /// <summary>
         /// Represents info about requested file system
@@ -444,6 +497,16 @@ namespace WPCordovaClassLib.Cordova.Commands
             {
                 Name = name;
                 Root = rootEntry;
+            }
+
+            /// <summary>
+            /// Creates information about a known file system root.
+            /// </summary>
+            /// <param name="root">File system root.</param>
+            public FileSystemInfo(FileSystemRoot fsRoot)
+            {
+                Name = fsRoot.Name;
+                Root = fsRoot.Entry;
             }
         }
 
@@ -858,13 +921,18 @@ namespace WPCordovaClassLib.Cordova.Commands
                     {
                         if (isoFile.FileExists(filePath))
                         {
-                            DispatchCommandResult(new PluginResult(PluginResult.Status.OK,
-                                new ModificationMetadata() { modificationTime = isoFile.GetLastWriteTime(filePath).DateTime.ToString() }), callbackId);
+                            string modTime = isoFile.GetLastWriteTime(filePath).DateTime.ToString();
+                            long size;
+                            using (var stream = new IsolatedStorageFileStream(filePath, FileMode.Open, isoFile))
+                            {
+                                size = stream.Length;
+                            }
+                            DispatchCommandResult(new PluginResult(PluginResult.Status.OK, new EntryMetadata() { ModificationTime = modTime, Size = size }), callbackId);
                         }
                         else if (isoFile.DirectoryExists(filePath))
                         {
                             string modTime = isoFile.GetLastWriteTime(filePath).DateTime.ToString();
-                            DispatchCommandResult(new PluginResult(PluginResult.Status.OK, new ModificationMetadata() { modificationTime = modTime }), callbackId);
+                            DispatchCommandResult(new PluginResult(PluginResult.Status.OK, new EntryMetadata() { ModificationTime = modTime, Size = 0 }), callbackId);
                         }
                         else
                         {
@@ -948,8 +1016,6 @@ namespace WPCordovaClassLib.Cordova.Commands
 
                         if (isoFile.FileExists(filePath) || isoFile.DirectoryExists(filePath))
                         {
-                           
-                             
                             string path = this.GetParentDirectory(filePath);
                             entry = FileEntry.GetEntry(path);
                             DispatchCommandResult(new PluginResult(PluginResult.Status.OK, entry),callbackId);
@@ -1088,6 +1154,31 @@ namespace WPCordovaClassLib.Cordova.Commands
             }
         }
 
+        public void requestAllPaths(string options)
+        {
+            string[] optStings = getOptionStrings(options);
+            string callbackId = optStings[0];
+
+            var paths = new FileSystemPaths
+            {
+                DataDirectory = APPDATA_LOCAL_ROOT.Path
+            };
+            DispatchCommandResult(new PluginResult(PluginResult.Status.OK, paths), callbackId);
+        }
+
+        public void requestAllFileSystems(string options)
+        {
+            string[] optStings = getOptionStrings(options);
+            string callbackId = optStings[0];
+
+            var entries = new List<FileEntry>();
+            foreach (var root in ROOTS)
+            {
+                entries.Add(root.Entry);
+            }
+            DispatchCommandResult(new PluginResult(PluginResult.Status.OK, entries), callbackId);
+        }
+
         public void requestFileSystem(string options)
         {
             // TODO: try/catch
@@ -1123,30 +1214,11 @@ namespace WPCordovaClassLib.Cordova.Commands
 
                 if (fileSystemType == PERSISTENT)
                 {
-                    // TODO: this should be in it's own folder to prevent overwriting of the app assets, which are also in ISO
-                    DispatchCommandResult(new PluginResult(PluginResult.Status.OK, new FileSystemInfo("persistent", FileEntry.GetEntry("/"))), callbackId);
+                    DispatchCommandResult(new PluginResult(PluginResult.Status.OK, new FileSystemInfo(PERSISTENT_ROOT)), callbackId);
                 }
                 else if (fileSystemType == TEMPORARY)
                 {
-                    using (IsolatedStorageFile isoStorage = IsolatedStorageFile.GetUserStoreForApplication())
-                    {
-                        if (!isoStorage.FileExists(TMP_DIRECTORY_NAME))
-                        {
-                            isoStorage.CreateDirectory(TMP_DIRECTORY_NAME);
-                        }
-                    }
-
-                    string tmpFolder = "/" + TMP_DIRECTORY_NAME + "/";
-
-                    DispatchCommandResult(new PluginResult(PluginResult.Status.OK, new FileSystemInfo("temporary", FileEntry.GetEntry(tmpFolder))), callbackId);
-                }
-                else if (fileSystemType == RESOURCE)
-                {
-                    DispatchCommandResult(new PluginResult(PluginResult.Status.OK, new FileSystemInfo("resource")), callbackId);
-                }
-                else if (fileSystemType == APPLICATION)
-                {
-                    DispatchCommandResult(new PluginResult(PluginResult.Status.OK, new FileSystemInfo("application")), callbackId);
+                    DispatchCommandResult(new PluginResult(PluginResult.Status.OK, new FileSystemInfo(TEMPORARY_ROOT)), callbackId);
                 }
                 else
                 {
@@ -1172,12 +1244,6 @@ namespace WPCordovaClassLib.Cordova.Commands
 
             if (uri != null)
             {
-                // a single '/' is valid, however, '/someDir' is not, but '/tmp//somedir' and '///someDir' are valid
-                if (uri.StartsWith("/") && uri.IndexOf("//") < 0 && uri != "/")
-                {
-                     DispatchCommandResult(new PluginResult(PluginResult.Status.ERROR, ENCODING_ERR), callbackId);
-                     return;
-                }
                 try
                 {
                     // fix encoded spaces
@@ -1239,10 +1305,10 @@ namespace WPCordovaClassLib.Cordova.Commands
 
             if (path.EndsWith(@"/") || path.EndsWith(@"\"))
             {
-                return this.GetParentDirectory(Path.GetDirectoryName(path));
+                return this.GetParentDirectory(Path.GetDirectoryName(path).Replace(@"\", @"/"));
             }
 
-            string result = Path.GetDirectoryName(path);
+            string result = Path.GetDirectoryName(path).Replace(@"\", @"/");
             if (result == null)
             {
                 result = "/";
