@@ -2,7 +2,7 @@
 <project name="Cordova plug-in" default="main">
 
 	<property name="output.dir" location="${basedir}/../webratio-tool/com.webratio.generator.mobile/BuiltinComponents/NativePlugins" />
-	<property name="zip" value="${output.dir}/com.webratio.cordova.file.zip" />
+	<property name="zip" value="${output.dir}/org.apache.cordova.file.zip" />
 
 	<available file="${output.dir}" type="dir" property="outputDirPresent" />
 	<fail unless="outputDirPresent" message="Invalid output dir ${output.dir}" />
