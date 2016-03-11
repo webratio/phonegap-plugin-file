@@ -281,6 +281,9 @@ FileReader.prototype.readAsBinaryString = function(file) {
             // DONE state
             me._readyState = FileReader.DONE;
 
+            if (['windowsphone', 'windows8'].indexOf(cordova.platformId) >= 0) {
+                r = String.fromCharCode.apply(String, r);
+            }
             me._result = r;
 
             // If onload callback
@@ -345,6 +348,9 @@ FileReader.prototype.readAsArrayBuffer = function(file) {
             // DONE state
             me._readyState = FileReader.DONE;
 
+            if (['windowsphone', 'windows8'].indexOf(cordova.platformId) >= 0) {
+                r = new Uint8Array(r).buffer;
+            }
             me._result = r;
 
             // If onload callback
