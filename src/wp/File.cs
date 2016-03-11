@@ -275,7 +275,8 @@ namespace WPCordovaClassLib.Cordova.Commands
                         this.FileName = System.IO.Path.GetFileName(filePath);
                         this.LastModifiedDate = isoFile.GetLastWriteTime(filePath).DateTime.ToString();
                     }
-                    this.Type = MimeTypeMapper.GetMimeType(this.FileName);
+                    string mimeType = MimeTypeMapper.GetMimeType(this.FileName);
+                    this.Type = (mimeType != "application/octet-stream" ? mimeType : null);
                 }
             }
         }
