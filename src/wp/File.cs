@@ -639,44 +639,11 @@ namespace WPCordovaClassLib.Cordova.Commands
 
         public void readAsDataURL(string options)
         {
-            string[] optStrings = getOptionStrings(options);
-            string filePath = optStrings[0];
-            int startPos = int.Parse(optStrings[1]);
-            int endPos = int.Parse(optStrings[2]);
-            string callbackId = optStrings[3];
-
-            if (filePath != null)
+            ReadAsBinary(options, bytes =>
             {
-                try
-                {
-                    string base64URL = null;
-
-                    using (IsolatedStorageFile isoFile = IsolatedStorageFile.GetUserStoreForApplication())
-                    {
-                        if (!isoFile.FileExists(filePath))
-                        {
-                            DispatchCommandResult(new PluginResult(PluginResult.Status.ERROR, NOT_FOUND_ERR), callbackId);
-                            return;
-                        }
-                        string mimeType = MimeTypeMapper.GetMimeType(filePath);
-
-                        using (IsolatedStorageFileStream stream = isoFile.OpenFile(filePath, FileMode.Open, FileAccess.Read))
-                        {
-                            string base64String = GetFileContent(stream);
-                            base64URL = "data:" + mimeType + ";base64," + base64String;
-                        }
-                    }
-
-                    DispatchCommandResult(new PluginResult(PluginResult.Status.OK, base64URL), callbackId);
-                }
-                catch (Exception ex)
-                {
-                    if (!this.HandleException(ex))
-                    {
-                        DispatchCommandResult(new PluginResult(PluginResult.Status.ERROR, NOT_READABLE_ERR), callbackId);
-                    }
-                }
-            }
+                string base64URL = "data:" + bytes + ";base64," + Convert.ToBase64String(bytes);
+                return base64URL;
+            });
         }
 
         public void readAsArrayBuffer(string options)
@@ -697,6 +664,50 @@ namespace WPCordovaClassLib.Cordova.Commands
             int endPos = int.Parse(optStrings[2]);
             string callbackId = optStrings[3];
             DispatchCommandResult(new PluginResult(PluginResult.Status.ERROR), callbackId);
+        }
+
+        /// <summary>
+        /// Shared implementation of the various methods that perform binary reads. If an error occurs, the method also dispatches the correct result.
+        /// </summary>
+        /// <param name="options">command options</param>
+        /// <param name="bytes">output array filled with the read bytes or null in case of errors</param>
+        /// <returns>true if read correctly, false in case of errors</returns>
+        private void ReadAsBinary<T>(string options, Func<byte[], T> converter)
+        {
+            string[] optStrings = getOptionStrings(options);
+            string filePath = optStrings[0];
+            int startPos = int.Parse(optStrings[1]);
+            int endPos = int.Parse(optStrings[2]);
+            string callbackId = optStrings[3];
+
+            try
+            {
+                using (IsolatedStorageFile isoFile = IsolatedStorageFile.GetUserStoreForApplication())
+                {
+                    if (!isoFile.FileExists(filePath))
+                    {
+                        DispatchCommandResult(new PluginResult(PluginResult.Status.ERROR, NOT_FOUND_ERR), callbackId);
+                    }
+                    string mimeType = MimeTypeMapper.GetMimeType(filePath);
+
+                    byte[] bytes;
+                    using (IsolatedStorageFileStream stream = isoFile.OpenFile(filePath, FileMode.Open, FileAccess.Read))
+                    {
+                        bytes = new byte[endPos - startPos];
+                        stream.Seek(startPos, SeekOrigin.Begin);
+                        stream.Read(bytes, 0, bytes.Length);
+                    }
+
+                    DispatchCommandResult(new PluginResult(PluginResult.Status.OK, converter(bytes)), callbackId);
+                }
+            }
+            catch (Exception ex)
+            {
+                if (!this.HandleException(ex))
+                {
+                    DispatchCommandResult(new PluginResult(PluginResult.Status.ERROR, NOT_READABLE_ERR), callbackId);
+                }
+            }
         }
 
         public void readAsText(string options)
@@ -767,7 +778,7 @@ namespace WPCordovaClassLib.Cordova.Commands
         /// Reads application resource as a text
         /// </summary>
         /// <param name="options">Path to a resource</param>
-        public void readResourceAsText(string options)
+        private void readResourceAsText(string options)
         {
             string[] optStrings = getOptionStrings(options);
             string pathToResource = optStrings[0];
@@ -1728,20 +1739,6 @@ namespace WPCordovaClassLib.Cordova.Commands
             {
                 return dirPath + "/";
             }
-        }
-
-        /// <summary>
-        /// Returns file content in a form of base64 string
-        /// </summary>
-        /// <param name="stream">File stream</param>
-        /// <returns>Base64 representation of the file</returns>
-        private string GetFileContent(Stream stream)
-        {
-            int streamLength = (int)stream.Length;
-            byte[] fileData = new byte[streamLength + 1];
-            stream.Read(fileData, 0, streamLength);
-            stream.Close();
-            return Convert.ToBase64String(fileData);
         }
 
         #endregion
