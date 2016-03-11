@@ -639,40 +639,39 @@ namespace WPCordovaClassLib.Cordova.Commands
 
         public void readAsDataURL(string options)
         {
-            ReadAsBinary(options, bytes =>
+            ReadAsBinary(options, (bytes, filePath) =>
             {
-                string base64URL = "data:" + bytes + ";base64," + Convert.ToBase64String(bytes);
+                var mimeType = MimeTypeMapper.GetMimeType(filePath);
+                var base64URL = "data:" + mimeType + ";base64," + Convert.ToBase64String(bytes);
                 return base64URL;
             });
         }
 
         public void readAsArrayBuffer(string options)
         {
-            string[] optStrings = getOptionStrings(options);
-            string filePath = optStrings[0];
-            int startPos = int.Parse(optStrings[1]);
-            int endPos = int.Parse(optStrings[2]);
-            string callbackId = optStrings[3];
-            DispatchCommandResult(new PluginResult(PluginResult.Status.ERROR), callbackId);
+            ReadAsBinary(options);
         }
 
         public void readAsBinaryString(string options)
         {
-            string[] optStrings = getOptionStrings(options);
-            string filePath = optStrings[0];
-            int startPos = int.Parse(optStrings[1]);
-            int endPos = int.Parse(optStrings[2]);
-            string callbackId = optStrings[3];
-            DispatchCommandResult(new PluginResult(PluginResult.Status.ERROR), callbackId);
+            ReadAsBinary(options);
         }
 
         /// <summary>
-        /// Shared implementation of the various methods that perform binary reads. If an error occurs, the method also dispatches the correct result.
+        /// Reads a file as binary a returns it to the client as raw bytes.
         /// </summary>
         /// <param name="options">command options</param>
-        /// <param name="bytes">output array filled with the read bytes or null in case of errors</param>
-        /// <returns>true if read correctly, false in case of errors</returns>
-        private void ReadAsBinary<T>(string options, Func<byte[], T> converter)
+        private void ReadAsBinary(string options)
+        {
+            ReadAsBinary(options, (bytes, filePath) => bytes);
+        }
+
+        /// <summary>
+        /// Reads a file as binary a returns it to the client, optionally transforming the resulting bytes.
+        /// </summary>
+        /// <param name="options">command options</param>
+        /// <param name="converter">function for converting the output</param>
+        private void ReadAsBinary<T>(string options, Func<byte[], string, T> converter)
         {
             string[] optStrings = getOptionStrings(options);
             string filePath = optStrings[0];
@@ -698,7 +697,7 @@ namespace WPCordovaClassLib.Cordova.Commands
                         stream.Read(bytes, 0, bytes.Length);
                     }
 
-                    DispatchCommandResult(new PluginResult(PluginResult.Status.OK, converter(bytes)), callbackId);
+                    DispatchCommandResult(new PluginResult(PluginResult.Status.OK, converter(bytes, filePath)), callbackId);
                 }
             }
             catch (Exception ex)
