@@ -33,8 +33,8 @@
  *  fail - FileError
  */
 
-var resolve = cordova.require('org.apache.cordova.file.resolveLocalFileSystemURIProxy'),
-    requestAnimationFrame = cordova.require('org.apache.cordova.file.bb10RequestAnimationFrame');
+var resolve = cordova.require('cordova-plugin-file.resolveLocalFileSystemURIProxy'),
+    requestAnimationFrame = cordova.require('cordova-plugin-file.bb10RequestAnimationFrame');
 
 module.exports = function (success, fail, args, move) {
     var uri = args[0],
@@ -42,9 +42,15 @@ module.exports = function (success, fail, args, move) {
         fileName = args[2],
         copiedEntry,
         onSuccess = function () {
-            if (typeof(success) === 'function') {
-                success(copiedEntry);
-            }
+            resolve(
+                function (entry) {
+                    if (typeof(success) === 'function') {
+                        success(entry);
+                    }
+                },
+                onFail,
+                [destination + copiedEntry.name]
+            );
         },
         onFail = function (error) {
             if (typeof(fail) === 'function') {

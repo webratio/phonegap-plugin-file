@@ -144,6 +144,9 @@ FileReader.prototype.readAsText = function(file, encoding) {
                 return;
             }
 
+            // DONE state
+            me._readyState = FileReader.DONE;
+
             // Save result
             me._result = r;
 
@@ -151,9 +154,6 @@ FileReader.prototype.readAsText = function(file, encoding) {
             if (typeof me.onload === "function") {
                 me.onload(new ProgressEvent("load", {target:me}));
             }
-
-            // DONE state
-            me._readyState = FileReader.DONE;
 
             // If onloadend callback
             if (typeof me.onloadend === "function") {
@@ -348,7 +348,7 @@ FileReader.prototype.readAsArrayBuffer = function(file) {
             // DONE state
             me._readyState = FileReader.DONE;
 
-            if (['windowsphone', 'windows8'].indexOf(cordova.platformId) >= 0) {
+            if (r instanceof Array) {
                 r = new Uint8Array(r).buffer;
             }
             me._result = r;

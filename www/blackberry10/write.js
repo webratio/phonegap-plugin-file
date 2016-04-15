@@ -33,8 +33,8 @@
  *  fail - FileError
  */
 
-var resolve = cordova.require('org.apache.cordova.file.resolveLocalFileSystemURIProxy'),
-    requestAnimationFrame = cordova.require('org.apache.cordova.file.bb10RequestAnimationFrame');
+var resolve = cordova.require('cordova-plugin-file.resolveLocalFileSystemURIProxy'),
+    requestAnimationFrame = cordova.require('cordova-plugin-file.bb10RequestAnimationFrame');
 
 module.exports = function (success, fail, args) {
     var uri = args[0],
@@ -50,6 +50,8 @@ module.exports = function (success, fail, args) {
             if (typeof fail === 'function') {
                 if (error && error.code) {
                     fail(error.code);
+                } else if (error && error.target && error.target.code) {
+                    fail(error.target.code);
                 } else {
                     fail(error);
                 }

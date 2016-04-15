@@ -34,8 +34,8 @@
  *  fail - FileError code
  */
 
-var resolve = cordova.require('org.apache.cordova.file.resolveLocalFileSystemURIProxy'),
-    requestAnimationFrame = cordova.require('org.apache.cordova.file.bb10RequestAnimationFrame');
+var resolve = cordova.require('cordova-plugin-file.resolveLocalFileSystemURIProxy'),
+    requestAnimationFrame = cordova.require('cordova-plugin-file.bb10RequestAnimationFrame');
 
 module.exports = function (success, fail, args) {
     var uri = args[0],
@@ -55,7 +55,11 @@ module.exports = function (success, fail, args) {
         };
     resolve(function (entry) {
         requestAnimationFrame(function () {
-            entry.nativeEntry.file(onSuccess, onFail);
+            if (entry.nativeEntry.file) {
+                entry.nativeEntry.file(onSuccess, onFail);
+            } else {
+                entry.nativeEntry.getMetadata(onSuccess, onFail);
+            }
         });
     }, onFail, [uri]);
 };
