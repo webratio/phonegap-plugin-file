@@ -62,7 +62,8 @@ Although in the global scope, it is not available until after the `deviceready` 
 - Firefox OS
 - iOS
 - OS X
-- Windows Phone 7 and 8*
+- Windows Phone 7*
+- Windows Phone 8
 - Windows 8*
 - Windows*
 - Browser
