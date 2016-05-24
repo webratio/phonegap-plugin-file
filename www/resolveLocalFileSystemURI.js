@@ -50,14 +50,6 @@
         var fail = function(error) {
             errorCallback && errorCallback(new FileError(error));
         };
-        // sanity check for 'not:valid:filename' or '/not:valid:filename'
-        // file.spec.12 window.resolveLocalFileSystemURI should error (ENCODING_ERR) when resolving invalid URI with leading /.
-        if(!uri || uri.split(":").length > 2) {
-            setTimeout( function() {
-                fail(FileError.ENCODING_ERR);
-            },0);
-            return;
-        }
         // if successful, return either a file or directory entry
         var success = function(entry) {
             if (entry) {
