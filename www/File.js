@@ -28,9 +28,10 @@
  * size {Number} size of the file in bytes
  */
 
-var File = function (name, localURL, type, lastModifiedDate, size) {
+var File = function (name, localURL, nativeURL, type, lastModifiedDate, size) {
     this.name = name || '';
     this.localURL = localURL || null;
+    this.nativeURL = nativeURL || null;
     this.type = type || null;
     this.lastModified = lastModifiedDate || null;
     // For backwards compatibility, store the timestamp in lastModifiedDate as well
@@ -69,7 +70,7 @@ File.prototype.slice = function (start, end) {
         }
     }
 
-    var newFile = new File(this.name, this.localURL, this.type, this.lastModified, this.size);
+    var newFile = new File(this.name, this.localURL, this.nativeURL, this.type, this.lastModified, this.size);
     newFile.start = this.start + newStart;
     newFile.end = this.start + newEnd;
     return newFile;

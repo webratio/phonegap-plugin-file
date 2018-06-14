@@ -206,7 +206,7 @@
             var fullPath = args[0];
 
             exports.getFile(function (fileEntry) {
-                successCallback(new File(fileEntry.file_.name, fileEntry.fullPath, '', fileEntry.file_.lastModifiedDate,
+                successCallback(new File(fileEntry.file_.name, fileEntry.fullPath, fileEntry.fullPath, '', fileEntry.file_.lastModifiedDate,
                     fileEntry.file_.size));
             }, errorCallback, [fullPath, null]);
         };

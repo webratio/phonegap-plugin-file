@@ -510,7 +510,7 @@ module.exports = {
         var getMetadataForFile = function (storageFile) {
             storageFile.getBasicPropertiesAsync().then(
                 function (basicProperties) {
-                    success(new File(storageFile.name, storageFile.path, storageFile.fileType, basicProperties.dateModified, basicProperties.size));
+                    success(new File(storageFile.name, storageFile.path, storageFile.path, storageFile.fileType, basicProperties.dateModified, basicProperties.size));
                 }, function () {
                 fail(FileError.NOT_READABLE_ERR);
             }
