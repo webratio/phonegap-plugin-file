@@ -80,11 +80,8 @@ FileEntry.prototype.createWriter = function (successCallback, errorCallback) {
 FileEntry.prototype.file = function (successCallback, errorCallback) {
     var localURL = this.toInternalURL();
     var nativeURL = this.nativeURL;
+    var normalizedURL = this._normalizeURL(localURL, nativeURL);
     var win = successCallback && function (f) {
-        var normalizedURL = localURL;
-        if (window.Ionic && window.Ionic.normalizeURL){
-            normalizedURL = window.Ionic.normalizeURL(nativeURL);
-        }
         var file = new File(f.name, localURL, normalizedURL, f.type, f.lastModifiedDate, f.size);
         successCallback(file);
     };
@@ -92,6 +89,20 @@ FileEntry.prototype.file = function (successCallback, errorCallback) {
         errorCallback(new FileError(code));
     };
     exec(win, fail, 'File', 'getFileMetadata', [localURL]);
+};
+
+/**
+ * Returns the normalized URL by checking whether is running inside a WKWebView or a UIWebView.
+ *
+ * @param {string} localURL is local URL of the file
+ * @param {string} nativeURL is the native URL of the file
+ */
+FileEntry.prototype._normalizeURL = function (localURL, nativeURL) {
+    var normalizedURL = localURL;
+    if (window.Ionic && window.Ionic.normalizeURL){
+        normalizedURL = window.Ionic.normalizeURL(nativeURL);
+    }
+    return normalizedURL;
 };
 
 module.exports = FileEntry;
