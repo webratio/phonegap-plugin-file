@@ -1,22 +1,16 @@
 {
   "name": "cordova-plugin-file",
-  "version": "5.0.0",
+  "version": "6.0.2",
   "description": "Cordova File Plugin",
   "types": "./types/index.d.ts",
   "cordova": {
     "id": "cordova-plugin-file",
     "platforms": [
       "android",
-      "amazon-fireos",
-      "ubuntu",
+      "browser",
       "ios",
       "osx",
-      "wp7",
-      "wp8",
-      "blackberry10",
-      "windows8",
-      "windows",
-      "firefoxos"
+      "windows"
     ]
   },
   "repository": {
@@ -24,23 +18,17 @@
     "url": "https://github.com/apache/cordova-plugin-file"
   },
   "bugs": {
-    "url": "https://issues.apache.org/jira/browse/CB"
+    "url": "https://github.com/apache/cordova-plugin-file/issues"
   },
   "keywords": [
     "cordova",
     "file",
     "ecosystem:cordova",
     "cordova-android",
-    "cordova-amazon-fireos",
-    "cordova-ubuntu",
+    "cordova-browser",
     "cordova-ios",
     "cordova-osx",
-    "cordova-wp7",
-    "cordova-wp8",
-    "cordova-blackberry10",
-    "cordova-windows8",
-    "cordova-windows",
-    "cordova-firefoxos"
+    "cordova-windows"
   ],
   "scripts": {
     "test": "npm run eslint",
@@ -53,7 +41,7 @@
       "5.0.0": {
         "cordova-android": ">=6.3.0"
       },
-      "6.0.0": {
+      "7.0.0": {
         "cordova": ">100"
       }
     }
