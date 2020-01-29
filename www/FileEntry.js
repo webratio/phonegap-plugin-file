@@ -99,8 +99,8 @@ FileEntry.prototype.file = function (successCallback, errorCallback) {
  */
 FileEntry.prototype._normalizeURL = function (localURL, nativeURL) {
     var normalizedURL = localURL;
-    if (window.Ionic && window.Ionic.normalizeURL){
-        normalizedURL = window.Ionic.normalizeURL(nativeURL);
+    if (window.Ionic && window.Ionic.WebView.convertFileSrc){
+        normalizedURL = window.Ionic.WebView.convertFileSrc(nativeURL);
     }
     return normalizedURL;
 };
